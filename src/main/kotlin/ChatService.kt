@@ -9,7 +9,9 @@ class ChatService {
 
     fun createChat(chat: Chat): Int {
         val newChat = chat.copy(chatId = actualChatId)
-        chats.add(newChat)
+        chats.run {
+            add(newChat)
+        }
         actualChatId++
         return newChat.chatId
     }
@@ -28,44 +30,43 @@ class ChatService {
 
     fun createMessage(userId: Int, message: Message) {
         val newMessage = message.copy(senderId = userId, messageId = actualMessageId)
-        if (message.chatId != 0) {
-            val messageList = chats.filter { it.chatId == message.chatId }
-            if (messageList.isEmpty()) {
-                throw ChatNotFoundException("no actual chat")
+        when (message.chatId) {
+            0 -> {
+                val messageList: MutableList<Message> = mutableListOf(newMessage)
+                newMessage.chatId = createChat(Chat(0, message.senderId, messageList))
+                actualMessageId++
             }
-            messageList[0].messages.add(newMessage)
-            actualMessageId++
-        } else {
-            val messageList: MutableList<Message> = mutableListOf(newMessage)
-            newMessage.chatId = createChat(Chat(0, message.senderId, messageList))
-            actualMessageId++
+            else -> {
+                val messageList = chats.filter { it.chatId == message.chatId }
+                if (messageList.isEmpty()) {
+                    throw ChatNotFoundException("no actual chat")
+                }
+                messageList[0].messages.add(newMessage)
+                actualMessageId++
+            }
         }
     }
 
-    fun editMessage(modifiedMessage: Message): Boolean { // редактировать записку
-        chats.forEach { chat ->
-            if (chat.chatId == modifiedMessage.chatId) {
-                chat.messages.withIndex().forEach { (index, message) ->
-                    if (message.messageId == modifiedMessage.messageId) {
-                        chat.messages[index] = message.copy(text = modifiedMessage.text)
-                        return true
-                    }
-                }
-            }
-        }
-        return false
+    fun editMessage(modifiedMessage: Message, newText: String) {
+        val chat = chats.first { it.chatId == modifiedMessage.chatId }
+        chat.messages[chat.messages.indexOf(modifiedMessage)] =
+            modifiedMessage.copy(text = newText, get = false)
     }
 
     fun deleteMessage(message: Message) {
         val chat = chats.first { it.chatId == message.chatId }
-        chat.messages.remove(message)
+            .apply {
+                messages.remove(message)
+            }
         chat.messages.ifEmpty { deleteChat(chat.chatId) }
     }
 
     fun getMessagesFromChat(chatId: Int, messageId: Int, amountOfMessages: Int): List<Message> {
         val result = chats.single { it.chatId == chatId }.messages
+            .asSequence()
             .filter { it.messageId >= messageId }
             .take(amountOfMessages)
+            .toList()
         chats
             .filter { chatId == it.chatId }
             .flatMap { it.messages }
@@ -74,7 +75,9 @@ class ChatService {
     }
 
     fun getUnreadChatsCount(userId: Int): Int { // количество непрочитанных чатов
-        return chats.filter { it.userId == userId }
+        return chats
+            .asSequence()
+            .filter { it.userId == userId }
             .map { chat -> chat.messages.filter { !it.get && it.incoming } }
             .count { it.isNotEmpty() }
     }

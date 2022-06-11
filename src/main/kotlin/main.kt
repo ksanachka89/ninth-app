@@ -14,7 +14,7 @@ fun main() {
     chat.createMessage(1, Message(2, 0, 1, 3, "Hi", get = true, incoming = true)) // создался новый чат (id4)
     println(chat)
 
-    chat.editMessage(Message(1, 2, 1, 2, "Bye", false, incoming = false))
+    chat.editMessage(Message(1, 2, 1, 2, "Hello", false, incoming = false), "Bye")
     println(chat)
 
     chat.createChat(Chat(5, 1, mutableListOf()))

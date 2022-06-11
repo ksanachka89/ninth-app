@@ -82,7 +82,7 @@ class ChatServiceTest {
     @Test
     fun createMessage_create_new_chat() {
         val chat = ChatService()
-        val result = chat.createMessage(
+        chat.createMessage(
             1, Message(
                 1, 0, 1, 2, "Hello", get = false, incoming = false
             )
@@ -102,7 +102,7 @@ class ChatServiceTest {
     }
 
     @Test
-    fun editMessage_true() {
+    fun editMessage_noChat() {
         val chat = ChatService()
         chat.createChat(
             Chat(
@@ -111,17 +111,22 @@ class ChatServiceTest {
         )
         chat.createMessage(
             1, Message(
-                1, 1, 1, 2, "Hello", get = false, incoming = false
+                1, 1, 1, 2, "Hello", get = true, incoming = false
             )
         )
-        val result = chat.editMessage(
-            Message(1, 1, 1, 2, "Bye", false, incoming = false)
+        val chatSizeBefore = chat.getMessagesFromChat(1, 1, 1).size
+        chat.editMessage(
+            Message(
+                1, 1, 1, 2, "Hello", get = true, incoming = false
+            ), "Bye"
         )
-        assertTrue(result)
+        val chatSizeAfter = chat.getMessagesFromChat(1, 1, 1).size
+        assertEquals(chatSizeBefore, chatSizeAfter)
     }
 
-    @Test
-    fun editMessage_false() {
+
+    @Test(expected = java.lang.IndexOutOfBoundsException::class)
+    fun editMessage_exception() {
         val chat = ChatService()
         chat.createChat(
             Chat(
@@ -130,13 +135,14 @@ class ChatServiceTest {
         )
         chat.createMessage(
             1, Message(
-                1, 1, 1, 2, "Hello", get = false, incoming = false
+                1, 1, 1, 2, "Hello", get = true, incoming = false
             )
         )
-        val result = chat.editMessage(
-            Message(2, 1, 1, 2, "Bye", false, incoming = false)
+        chat.editMessage(
+            Message(
+                2, 1, 1, 2, "Hello", get = true, incoming = false
+            ), "Bye"
         )
-        assertFalse(result)
     }
 
     @Test
